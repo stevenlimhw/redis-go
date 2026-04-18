@@ -20,6 +20,7 @@ IMPLEMENTED FEATURES
 ------------------------------------------------------------------------
 
 1. Core Cache Operations (Set, Get)
+
    Status: Done
 
    Functional Requirements
@@ -36,6 +37,7 @@ IMPLEMENTED FEATURES
 
 
 2. Background Cleanup Goroutine
+
    Status: Done
 
    Functional Requirements
@@ -53,6 +55,7 @@ IMPLEMENTED FEATURES
 
 
 3. Delete, Exists, Clear
+
    Status: Done
 
    Functional Requirements
@@ -67,6 +70,7 @@ IMPLEMENTED FEATURES
 
 
 4. Hit / Miss / Eviction Stats
+
    Status: Done
 
    Functional Requirements
@@ -83,11 +87,8 @@ IMPLEMENTED FEATURES
    - Stats are stored on the Cache struct and never reset automatically
 
 
-------------------------------------------------------------------------
-PLANNED FEATURES
-------------------------------------------------------------------------
-
 5. TTL Management (ttl, refresh, persist)
+
    Status: Planned
 
    Functional Requirements
@@ -102,6 +103,7 @@ PLANNED FEATURES
 
 
 6. Max Capacity and Eviction Policy
+
    Status: Planned
 
    Functional Requirements
@@ -117,6 +119,7 @@ PLANNED FEATURES
 
 
 7. Persistence (Snapshot and Restore)
+
    Status: Planned
 
    Functional Requirements
@@ -132,6 +135,7 @@ PLANNED FEATURES
 
 
 8. HTTP Server Layer
+
    Status: Planned
 
    Functional Requirements
