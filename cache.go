@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"io"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -13,6 +14,8 @@ type Cache struct {
 	done chan struct{}
 	once sync.Once
 	stats Stats
+
+	logger *log.Logger
 }
 
 type CacheEntry struct {
@@ -23,10 +26,14 @@ type CacheEntry struct {
 
 const defaultCacheTtl = 60 * time.Second // in secs
 
-func NewCache() *Cache {
+func NewCache(w io.Writer) *Cache {
 	cacheMap := make(map[string]*CacheEntry)
 	done := make(chan struct{})
-	cache := &Cache{CacheMap:cacheMap, done: done}
+	cache := &Cache{
+		CacheMap:	cacheMap, 
+		done: 		done,
+		logger: 	log.New(w, "[cache] ", 0),
+	}
 	go cache.cleanup()
 	return cache
 }
@@ -48,7 +55,7 @@ func (c *Cache) Get(key string) (string, bool) {
 		atomic.AddInt64(&c.stats.Evicts, 1)
 		c.mutex.Unlock()
 
-		fmt.Printf("[cache] GET key=%q val=%q ttl=%v expires=%s\n",
+		c.logger.Printf("GET key=%q val=%q ttl=%v expires=%s\n",
   	  key,
   	  entry.Value,
   	  entry.Ttl,
@@ -57,7 +64,7 @@ func (c *Cache) Get(key string) (string, bool) {
 		return "", false
 	}
 
-	fmt.Printf("[cache] GET key=%q val=%q ttl=%v expires=%s\n",
+	c.logger.Printf("GET key=%q val=%q ttl=%v expires=%s\n",
     key,
     entry.Value,
     entry.Ttl,
@@ -81,7 +88,7 @@ func (c *Cache) Set(key string, val string, ttlInSeconds int) (*CacheEntry, bool
 	expiryTime := calculateExpiry(ttl)
 	entry := &CacheEntry{Value: val, ExpiryTime: expiryTime, Ttl: ttl}
 	c.CacheMap[key] = entry
-	fmt.Printf("[cache] SET key=%q val=%q ttl=%v expires=%s\n",
+	c.logger.Printf("SET key=%q val=%q ttl=%v expires=%s\n",
     key,
     val,
     ttl,
@@ -126,7 +133,7 @@ func (c *Cache) Ttl(key string) time.Duration {
 	c.mutex.RUnlock()
 
 	if !ok {
-		fmt.Printf("[cache] TTL key=%q not found\n", key) 
+		c.logger.Printf("TTL key=%q not found\n", key) 
 		return -1
 	}
 
@@ -136,7 +143,7 @@ func (c *Cache) Ttl(key string) time.Duration {
 
 	currentTtl := entry.ExpiryTime.Sub(time.Now())
 
-	fmt.Printf("[cache] TTL key=%q, ttl=%q\n", key, currentTtl)
+	c.logger.Printf("TTL key=%q, ttl=%q\n", key, currentTtl)
 	return currentTtl
 }
 
@@ -147,7 +154,7 @@ func (c *Cache) Refresh(key string) time.Duration {
 	c.mutex.RUnlock()
 
 	if !ok {
-		fmt.Printf("[cache] REFRESH ttl key=%q failed to execute", key)
+		c.logger.Printf("REFRESH ttl key=%q failed to execute", key)
 		return -1
 	}
 	ttl := entry.Ttl
@@ -166,7 +173,7 @@ func (c *Cache) Persist(key string) bool {
 	entry, ok := c.CacheMap[key]
 
 	if !ok {
-		fmt.Printf("[cache] PERSIST key=%q failed to execute", key)
+		c.logger.Printf("PERSIST key=%q failed to execute", key)
 		return false
 	}
 
@@ -188,7 +195,7 @@ func (c *Cache) cleanup() {
 				if entry.isExpired() {
 					delete(c.CacheMap, key)
 					atomic.AddInt64(&c.stats.Evicts, 1)
-					fmt.Printf("[cache] EVICT key=%q val=%q\n", key, entry.Value)
+					c.logger.Printf("EVICT key=%q val=%q\n", key, entry.Value)
 				}
 			}
 		  c.mutex.Unlock()

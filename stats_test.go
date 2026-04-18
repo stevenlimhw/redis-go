@@ -1,13 +1,14 @@
-package main// --- Stats ---
+package main // --- Stats ---
 
 import (
+	"io"
 	"sync"
 	"testing"
 	"time"
 )
 
 func TestStats_InitialValuesAreZero(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	stats := cache.Stats()
@@ -23,7 +24,7 @@ func TestStats_InitialValuesAreZero(t *testing.T) {
 }
 
 func TestStats_HitIsIncremented(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Set("key", "val", 60)
@@ -35,7 +36,7 @@ func TestStats_HitIsIncremented(t *testing.T) {
 }
 
 func TestStats_MissIsIncrementedOnMissingKey(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Get("nonexistent")
@@ -46,7 +47,7 @@ func TestStats_MissIsIncrementedOnMissingKey(t *testing.T) {
 }
 
 func TestStats_MissIsIncrementedOnExpiredKey(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Set("key", "val", 1)
@@ -59,7 +60,7 @@ func TestStats_MissIsIncrementedOnExpiredKey(t *testing.T) {
 }
 
 func TestStats_EvictIsIncrementedOnExpiredKeyGet(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Set("key", "val", 1)
@@ -72,7 +73,7 @@ func TestStats_EvictIsIncrementedOnExpiredKeyGet(t *testing.T) {
 }
 
 func TestStats_MultipleHitsAndMisses(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Set("a", "alpha", 60)
@@ -93,7 +94,7 @@ func TestStats_MultipleHitsAndMisses(t *testing.T) {
 }
 
 func TestStats_HitsNotAffectedByMisses(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Get("missing1")
@@ -105,7 +106,7 @@ func TestStats_HitsNotAffectedByMisses(t *testing.T) {
 }
 
 func TestStats_ConcurrentGetsAreCountedAccurately(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Set("key", "val", 60)

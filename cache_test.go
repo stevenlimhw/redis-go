@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"sync"
 	"testing"
 	"time"
@@ -9,21 +10,21 @@ import (
 // --- NewCache ---
 
 func TestNewCache_IsNotNil(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	if cache == nil {
 		t.Fatal("expected non-nil cache")
 	}
 }
 
 func TestNewCache_MapIsInitialized(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	if cache.CacheMap == nil {
 		t.Fatal("expected CacheMap to be initialized, got nil")
 	}
 }
 
 func TestNewCache_IsEmpty(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	if len(cache.CacheMap) != 0 {
 		t.Fatalf("expected empty cache, got %d entries", len(cache.CacheMap))
 	}
@@ -32,7 +33,7 @@ func TestNewCache_IsEmpty(t *testing.T) {
 // --- Set ---
 
 func TestSet_StoresValue(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	entry, ok := cache.Set("key1", "value1", 60)
 	if !ok {
 		t.Fatal("expected set to return true")
@@ -46,7 +47,7 @@ func TestSet_StoresValue(t *testing.T) {
 }
 
 func TestSet_TTLIsApplied(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	entry, _ := cache.Set("key1", "value1", 30)
 	expectedTTL := 30 * time.Second
 	if entry.Ttl != expectedTTL {
@@ -55,7 +56,7 @@ func TestSet_TTLIsApplied(t *testing.T) {
 }
 
 func TestSet_DefaultTTLWhenZero(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	entry, _ := cache.Set("key1", "value1", 0)
 	if entry.Ttl != defaultCacheTtl {
 		t.Errorf("expected default TTL %v, got %v", defaultCacheTtl, entry.Ttl)
@@ -63,7 +64,7 @@ func TestSet_DefaultTTLWhenZero(t *testing.T) {
 }
 
 func TestSet_ExpiryTimeIsInFuture(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	before := time.Now()
 	entry, _ := cache.Set("key1", "value1", 60)
 	after := time.Now()
@@ -77,7 +78,7 @@ func TestSet_ExpiryTimeIsInFuture(t *testing.T) {
 }
 
 func TestSet_OverwritesExistingKey(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	cache.Set("key1", "first", 60)
 	cache.Set("key1", "second", 60)
 
@@ -88,7 +89,7 @@ func TestSet_OverwritesExistingKey(t *testing.T) {
 }
 
 func TestSet_MultipleKeys(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	cache.Set("a", "alpha", 60)
 	cache.Set("b", "beta", 60)
 	cache.Set("c", "gamma", 60)
@@ -101,7 +102,7 @@ func TestSet_MultipleKeys(t *testing.T) {
 // --- Get ---
 
 func TestGet_ReturnsStoredValue(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	cache.Set("dog", "woof", 60)
 
 	val, ok := cache.Get("dog")
@@ -114,7 +115,7 @@ func TestGet_ReturnsStoredValue(t *testing.T) {
 }
 
 func TestGet_MissingKeyReturnsFalse(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 
 	val, ok := cache.Get("nonexistent")
 	if ok {
@@ -126,7 +127,7 @@ func TestGet_MissingKeyReturnsFalse(t *testing.T) {
 }
 
 func TestGet_ExpiredEntryReturnsFalse(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	cache.Set("temp", "gone-soon", 1) // 1 second TTL
 
 	time.Sleep(1100 * time.Millisecond)
@@ -141,7 +142,7 @@ func TestGet_ExpiredEntryReturnsFalse(t *testing.T) {
 }
 
 func TestGet_ExpiredEntryIsDeletedFromMap(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	cache.Set("temp", "gone-soon", 1)
 
 	time.Sleep(1100 * time.Millisecond)
@@ -153,7 +154,7 @@ func TestGet_ExpiredEntryIsDeletedFromMap(t *testing.T) {
 }
 
 func TestGet_ActiveEntryIsNotDeleted(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	cache.Set("persist", "alive", 60)
 
 	cache.Get("persist")
@@ -164,7 +165,7 @@ func TestGet_ActiveEntryIsNotDeleted(t *testing.T) {
 }
 
 func TestGet_JustBeforeExpiry(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	cache.Set("key", "val", 2) // 2 second TTL
 
 	time.Sleep(500 * time.Millisecond) // well within TTL
@@ -218,7 +219,7 @@ func TestCalculateExpiry_IsApproximatelyNowPlusTTL(t *testing.T) {
 // --- Concurrency ---
 
 func TestConcurrentSetAndGet(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	var wg sync.WaitGroup
 	const goroutines = 50
 
@@ -246,7 +247,7 @@ func TestConcurrentSetAndGet(t *testing.T) {
 }
 
 func TestConcurrentSetOnSameKey(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	var wg sync.WaitGroup
 	const goroutines = 100
 
@@ -269,7 +270,7 @@ func TestConcurrentSetOnSameKey(t *testing.T) {
 // --- Cleanup / Background Eviction ---
 
 func TestCleanup_ExpiredEntriesAreRemoved(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Set("a", "alpha", 1) // expires in 1s
@@ -291,7 +292,7 @@ func TestCleanup_ExpiredEntriesAreRemoved(t *testing.T) {
 }
 
 func TestCleanup_NonExpiredEntriesAreUntouched(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Set("x", "xray", 60)
@@ -311,7 +312,7 @@ func TestCleanup_NonExpiredEntriesAreUntouched(t *testing.T) {
 }
 
 func TestStop_StopsCleanupGoroutine(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	cache.Set("k", "v", 1)
 
 	cache.Stop() // stop before cleanup fires
@@ -326,7 +327,7 @@ func TestStop_StopsCleanupGoroutine(t *testing.T) {
 }
 
 func TestStop_IsIdempotent(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	cache.Stop()
 
 	defer func() {
@@ -339,7 +340,7 @@ func TestStop_IsIdempotent(t *testing.T) {
 }
 
 func TestDelete_RemovesCorrectEntry(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	cache.Set("key", "val", 10)
 
 	val, ok := cache.Get("key")
@@ -355,7 +356,7 @@ func TestDelete_RemovesCorrectEntry(t *testing.T) {
 }
 
 func TestExists_FoundCorrectEntry(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	cache.Set("key", "val", 10)
 
 	ok := cache.Exists("key")
@@ -365,7 +366,7 @@ func TestExists_FoundCorrectEntry(t *testing.T) {
 }
 
 func TestExists_CannotFindCorrectEntry(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 
 	ok := cache.Exists("key")
 	if ok {
@@ -375,7 +376,7 @@ func TestExists_CannotFindCorrectEntry(t *testing.T) {
 }
 
 func TestClear_RemovesAllEntries(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	cache.Set("key1", "val1", 1)
 	cache.Set("key2", "val2", 1)
 	cache.Set("key3", "val3", 1)
@@ -393,7 +394,7 @@ func TestClear_RemovesAllEntries(t *testing.T) {
 // --- Ttl ---
 
 func TestTtl_ReturnsNegativeOneForMissingKey(t *testing.T) {
-    cache := NewCache()
+    cache := NewCache(io.Discard)
     defer cache.Stop()
 
     ttl := cache.Ttl("nonexistent")
@@ -403,7 +404,7 @@ func TestTtl_ReturnsNegativeOneForMissingKey(t *testing.T) {
 }
 
 func TestTtl_ReturnsZeroForExpiredKey(t *testing.T) {
-    cache := NewCache()
+    cache := NewCache(io.Discard)
     defer cache.Stop()
 
     cache.Set("key", "val", 1)
@@ -416,7 +417,7 @@ func TestTtl_ReturnsZeroForExpiredKey(t *testing.T) {
 }
 
 func TestTtl_ReturnsPositiveDurationForActiveKey(t *testing.T) {
-    cache := NewCache()
+    cache := NewCache(io.Discard)
     defer cache.Stop()
 
     cache.Set("key", "val", 60)
@@ -431,7 +432,7 @@ func TestTtl_ReturnsPositiveDurationForActiveKey(t *testing.T) {
 }
 
 func TestTtl_DecreasesOverTime(t *testing.T) {
-    cache := NewCache()
+    cache := NewCache(io.Discard)
     defer cache.Stop()
 
     cache.Set("key", "val", 60)
@@ -470,7 +471,7 @@ func TestIsExpired_ExactlyNowIsExpired(t *testing.T) {
 // --- Persist ---
 
 func TestPersist_SetsExpiryTimeToZero(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Set("key", "val", 60)
@@ -486,7 +487,7 @@ func TestPersist_SetsExpiryTimeToZero(t *testing.T) {
 }
 
 func TestPersist_IsExpiredReturnsFalseAfterPersist(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Set("key", "val", 60)
@@ -502,7 +503,7 @@ func TestPersist_IsExpiredReturnsFalseAfterPersist(t *testing.T) {
 }
 
 func TestPersist_KeyNeverExpires(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Set("key", "val", 1)
@@ -516,7 +517,7 @@ func TestPersist_KeyNeverExpires(t *testing.T) {
 }
 
 func TestPersist_ReturnsFalseForMissingKey(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	ok := cache.Persist("nonexistent")
@@ -526,7 +527,7 @@ func TestPersist_ReturnsFalseForMissingKey(t *testing.T) {
 }
 
 func TestPersist_DoesNotChangeValue(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Set("key", "permanent", 60)
@@ -539,7 +540,7 @@ func TestPersist_DoesNotChangeValue(t *testing.T) {
 }
 
 func TestPersist_KeySurvivesBackgroundCleanup(t *testing.T) {
-	cache := NewCache()
+	cache := NewCache(io.Discard)
 	defer cache.Stop()
 
 	cache.Set("key", "val", 1)
