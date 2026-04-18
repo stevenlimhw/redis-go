@@ -25,4 +25,5 @@ func main() {
 	val2, _ = cache.Get("1")
 	fmt.Printf("get 1, expected: empty string, actual: %v\n", val2)
 
+	fmt.Print(cache.Stats())
 }

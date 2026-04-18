@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -11,6 +12,7 @@ type Cache struct {
 	mutex sync.RWMutex
 	done chan struct{}
 	once sync.Once
+	stats Stats
 }
 
 type CacheEntry struct {
@@ -35,12 +37,15 @@ func (c *Cache) Get(key string) (string, bool) {
 	c.mutex.RUnlock()
 
 	if !ok {
+		atomic.AddInt64(&c.stats.Misses, 1)
 		return "", false
 	}
 
 	if entry.isExpired() {
 		c.mutex.Lock()
 		delete(c.CacheMap, key)
+		atomic.AddInt64(&c.stats.Misses, 1)
+		atomic.AddInt64(&c.stats.Evicts, 1)
 		c.mutex.Unlock()
 
 		fmt.Printf("[cache] GET key=%q val=%q ttl=%v expires=%s\n",
@@ -58,6 +63,8 @@ func (c *Cache) Get(key string) (string, bool) {
     entry.Ttl,
     entry.ExpiryTime.Format(time.DateTime),
 	)
+
+	atomic.AddInt64(&c.stats.Hits, 1)
 	return entry.Value, ok
 }
 
@@ -124,6 +131,7 @@ func (c *Cache) cleanup() {
 			for key, entry := range c.CacheMap {
 				if entry.isExpired() {
 					delete(c.CacheMap, key)
+					atomic.AddInt64(&c.stats.Evicts, 1)
 					fmt.Printf("[cache] EVICT key=%q val=%q\n", key, entry.Value)
 				}
 			}
