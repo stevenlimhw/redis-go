@@ -140,6 +140,41 @@ func (c *Cache) Ttl(key string) time.Duration {
 	return currentTtl
 }
 
+// refresh(key): resets a key's TTL back to its original value without changing its value
+func (c *Cache) Refresh(key string) time.Duration {
+	c.mutex.RLock()
+	entry, ok := c.CacheMap[key]
+	c.mutex.RUnlock()
+
+	if !ok {
+		fmt.Printf("[cache] REFRESH ttl key=%q failed to execute", key)
+		return -1
+	}
+	ttl := entry.Ttl
+
+	c.mutex.Lock()
+	entry.ExpiryTime = time.Now().Add(ttl)
+	c.mutex.Unlock()
+
+	return ttl
+}
+
+// persist(key): removes the expiry from a key, making it permanent
+func (c *Cache) Persist(key string) bool {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	entry, ok := c.CacheMap[key]
+
+	if !ok {
+		fmt.Printf("[cache] PERSIST key=%q failed to execute", key)
+		return false
+	}
+
+	entry.ExpiryTime = time.Time{}
+	entry.Ttl = -1
+	return true
+}
+
 func (c *Cache) cleanup() {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -168,6 +203,9 @@ func calculateExpiry(ttl time.Duration) time.Time {
 }
 
 func (entry *CacheEntry) isExpired() bool {
+	if entry.Ttl == -1 || entry.ExpiryTime.IsZero() {
+		return false // persisted keys never expire
+	}
 	return time.Now().After(entry.ExpiryTime)
 }
 

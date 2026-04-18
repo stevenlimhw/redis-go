@@ -444,3 +444,110 @@ func TestTtl_DecreasesOverTime(t *testing.T) {
     }
 }
 
+// --- isExpired ---
+
+func TestIsExpired_ZeroTimeReturnsFalse(t *testing.T) {
+	entry := &CacheEntry{
+		Value:      "val",
+		ExpiryTime: time.Time{}, // zero value — persisted key
+	}
+	if entry.isExpired() {
+		t.Error("expected isExpired=false for zero ExpiryTime")
+	}
+}
+
+func TestIsExpired_ExactlyNowIsExpired(t *testing.T) {
+	entry := &CacheEntry{
+		Value:      "val",
+		ExpiryTime: time.Now().Add(-1 * time.Millisecond),
+		Ttl:        1 * time.Second,
+	}
+	if !entry.isExpired() {
+		t.Error("expected isExpired=true for expiry in the past")
+	}
+}
+
+// --- Persist ---
+
+func TestPersist_SetsExpiryTimeToZero(t *testing.T) {
+	cache := NewCache()
+	defer cache.Stop()
+
+	cache.Set("key", "val", 60)
+	cache.Persist("key")
+
+	cache.mutex.RLock()
+	entry := cache.CacheMap["key"]
+	cache.mutex.RUnlock()
+
+	if !entry.ExpiryTime.IsZero() {
+		t.Errorf("expected ExpiryTime to be zero after Persist, got %v", entry.ExpiryTime)
+	}
+}
+
+func TestPersist_IsExpiredReturnsFalseAfterPersist(t *testing.T) {
+	cache := NewCache()
+	defer cache.Stop()
+
+	cache.Set("key", "val", 60)
+	cache.Persist("key")
+
+	cache.mutex.RLock()
+	entry := cache.CacheMap["key"]
+	cache.mutex.RUnlock()
+
+	if entry.isExpired() {
+		t.Error("expected isExpired=false after Persist")
+	}
+}
+
+func TestPersist_KeyNeverExpires(t *testing.T) {
+	cache := NewCache()
+	defer cache.Stop()
+
+	cache.Set("key", "val", 1)
+	cache.Persist("key")
+	time.Sleep(1500 * time.Millisecond)
+
+	_, ok := cache.Get("key")
+	if !ok {
+		t.Error("expected persisted key to still exist after original TTL elapsed")
+	}
+}
+
+func TestPersist_ReturnsFalseForMissingKey(t *testing.T) {
+	cache := NewCache()
+	defer cache.Stop()
+
+	ok := cache.Persist("nonexistent")
+	if ok {
+		t.Error("expected false for missing key, got true")
+	}
+}
+
+func TestPersist_DoesNotChangeValue(t *testing.T) {
+	cache := NewCache()
+	defer cache.Stop()
+
+	cache.Set("key", "permanent", 60)
+	cache.Persist("key")
+
+	val, ok := cache.Get("key")
+	if !ok || val != "permanent" {
+		t.Errorf("expected value unchanged after Persist, got %q ok=%v", val, ok)
+	}
+}
+
+func TestPersist_KeySurvivesBackgroundCleanup(t *testing.T) {
+	cache := NewCache()
+	defer cache.Stop()
+
+	cache.Set("key", "val", 1)
+	cache.Persist("key")
+	time.Sleep(7 * time.Second) // wait for cleanup sweep
+
+	if !cache.Exists("key") {
+		t.Error("expected persisted key to survive background cleanup")
+	}
+}
+
