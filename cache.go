@@ -119,6 +119,27 @@ func (c *Cache) Clear() {
 	c.CacheMap = make(map[string]*CacheEntry)
 }
 
+// returns remaining lifetime of a key
+func (c *Cache) Ttl(key string) time.Duration {
+	c.mutex.RLock()
+	entry, ok := c.CacheMap[key]
+	c.mutex.RUnlock()
+
+	if !ok {
+		fmt.Printf("[cache] TTL key=%q not found\n", key) 
+		return -1
+	}
+
+	if entry.isExpired() {
+		return 0
+	}
+
+	currentTtl := entry.ExpiryTime.Sub(time.Now())
+
+	fmt.Printf("[cache] TTL key=%q, ttl=%q\n", key, currentTtl)
+	return currentTtl
+}
+
 func (c *Cache) cleanup() {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()

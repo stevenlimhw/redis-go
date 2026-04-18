@@ -388,9 +388,59 @@ func TestClear_RemovesAllEntries(t *testing.T) {
 	if ok1 || ok2 || ok3 {
 		t.Error("expected all keys to not exist in cache, but found at least one")
 	}
-
 }
 
+// --- Ttl ---
 
+func TestTtl_ReturnsNegativeOneForMissingKey(t *testing.T) {
+    cache := NewCache()
+    defer cache.Stop()
 
+    ttl := cache.Ttl("nonexistent")
+    if ttl != -1 {
+        t.Errorf("expected -1 for missing key, got %v", ttl)
+    }
+}
+
+func TestTtl_ReturnsZeroForExpiredKey(t *testing.T) {
+    cache := NewCache()
+    defer cache.Stop()
+
+    cache.Set("key", "val", 1)
+    time.Sleep(1100 * time.Millisecond)
+
+    ttl := cache.Ttl("key")
+    if ttl != 0 {
+        t.Errorf("expected 0 for expired key, got %v", ttl)
+    }
+}
+
+func TestTtl_ReturnsPositiveDurationForActiveKey(t *testing.T) {
+    cache := NewCache()
+    defer cache.Stop()
+
+    cache.Set("key", "val", 60)
+    ttl := cache.Ttl("key")
+
+    if ttl <= 0 {
+        t.Errorf("expected positive TTL for active key, got %v", ttl)
+    }
+    if ttl > 60*time.Second {
+        t.Errorf("expected TTL <= 60s, got %v", ttl)
+    }
+}
+
+func TestTtl_DecreasesOverTime(t *testing.T) {
+    cache := NewCache()
+    defer cache.Stop()
+
+    cache.Set("key", "val", 60)
+    ttl1 := cache.Ttl("key")
+    time.Sleep(500 * time.Millisecond)
+    ttl2 := cache.Ttl("key")
+
+    if ttl2 >= ttl1 {
+        t.Errorf("expected TTL to decrease over time, got ttl1=%v ttl2=%v", ttl1, ttl2)
+    }
+}
 
