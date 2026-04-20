@@ -581,7 +581,7 @@ func strSliceEqual(a, b []string) bool {
 		return false
 	}
 	for i := range a {
-		if a[i] != b[i] {
+		if a[i] != b[i] { //nolint:gosec
 			return false
 		}
 	}

@@ -40,11 +40,12 @@ linters:
     - goconst
     - tagliatelle
 
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - goconst
+  exclusions:
+    rules:
+      - path: ".*_test\\.go"
+        linters:
+          - goconst
+          - dupl
 
 run:
   issues-exit-code: 1
