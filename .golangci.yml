@@ -1,0 +1,45 @@
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+  goconst:
+    min-len: 2
+    min-occurrences: 3
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+  govet:
+    shadow: true
+    enable:
+      - fieldalignment
+  nolintlint:
+    require-explanation: true
+    require-specific: true
+
+linters:
+  disable-all: true
+  enable:
+    # bugs/error
+    - staticcheck
+    - revive
+    - govet
+    - errcheck
+    - gosec
+    - dupl
+
+    # performance
+    - gocritic
+    - prealloc
+
+    # style, formatting
+    - stylecheck
+    - goconst
+    - gofmt
+    - tagliatelle
+
+run:
+  issues-exit-code: 1
+
