@@ -35,7 +35,11 @@ func (server *Server) Start() {
 }
 
 func (server *Server) handleConnection(conn net.Conn) {
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("failed to close connection: %v", err)
+		}
+	}()
 
 	// data from client
 	packet := make([]byte, 0)

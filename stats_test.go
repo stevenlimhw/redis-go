@@ -130,37 +130,36 @@ func TestStats_ConcurrentGetsAreCountedAccurately(t *testing.T) {
 func TestStats_HitIsIncrementedOnGet(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("key", "val", 60)
 	cache.Get("key")
- 
+
 	if cache.Stats().Hits != 1 {
 		t.Errorf("expected Hits=1, got %d", cache.Stats().Hits)
 	}
 }
- 
+
 func TestStats_EvictIsIncrementedOnExpiredGet(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("key", "val", 1)
 	time.Sleep(1100 * time.Millisecond)
 	cache.Get("key")
- 
-	if cache.Stats().Evicts != 1 {
-		t.Errorf("expected Evicts=1, got %d", cache.Stats().Evicts)
-	}
-}
- 
-func TestStats_EvictIsIncrementedOnDelete(t *testing.T) {
-	cache := NewCache(io.Discard)
-	defer cache.Stop()
- 
-	cache.Set("key", "val", 60)
-	cache.Delete("key")
- 
+
 	if cache.Stats().Evicts != 1 {
 		t.Errorf("expected Evicts=1, got %d", cache.Stats().Evicts)
 	}
 }
 
+func TestStats_EvictIsIncrementedOnDelete(t *testing.T) {
+	cache := NewCache(io.Discard)
+	defer cache.Stop()
+
+	cache.Set("key", "val", 60)
+	cache.Delete("key")
+
+	if cache.Stats().Evicts != 1 {
+		t.Errorf("expected Evicts=1, got %d", cache.Stats().Evicts)
+	}
+}

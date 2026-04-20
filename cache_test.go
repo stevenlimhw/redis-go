@@ -394,55 +394,55 @@ func TestClear_RemovesAllEntries(t *testing.T) {
 // --- Ttl ---
 
 func TestTtl_ReturnsNegativeOneForMissingKey(t *testing.T) {
-    cache := NewCache(io.Discard)
-    defer cache.Stop()
+	cache := NewCache(io.Discard)
+	defer cache.Stop()
 
-    ttl := cache.Ttl("nonexistent")
-    if ttl != -1 {
-        t.Errorf("expected -1 for missing key, got %v", ttl)
-    }
+	ttl := cache.Ttl("nonexistent")
+	if ttl != -1 {
+		t.Errorf("expected -1 for missing key, got %v", ttl)
+	}
 }
 
 func TestTtl_ReturnsZeroForExpiredKey(t *testing.T) {
-    cache := NewCache(io.Discard)
-    defer cache.Stop()
+	cache := NewCache(io.Discard)
+	defer cache.Stop()
 
-    cache.Set("key", "val", 1)
-    time.Sleep(1100 * time.Millisecond)
+	cache.Set("key", "val", 1)
+	time.Sleep(1100 * time.Millisecond)
 
-    ttl := cache.Ttl("key")
-    if ttl != 0 {
-        t.Errorf("expected 0 for expired key, got %v", ttl)
-    }
+	ttl := cache.Ttl("key")
+	if ttl != 0 {
+		t.Errorf("expected 0 for expired key, got %v", ttl)
+	}
 }
 
 func TestTtl_ReturnsPositiveDurationForActiveKey(t *testing.T) {
-    cache := NewCache(io.Discard)
-    defer cache.Stop()
+	cache := NewCache(io.Discard)
+	defer cache.Stop()
 
-    cache.Set("key", "val", 60)
-    ttl := cache.Ttl("key")
+	cache.Set("key", "val", 60)
+	ttl := cache.Ttl("key")
 
-    if ttl <= 0 {
-        t.Errorf("expected positive TTL for active key, got %v", ttl)
-    }
-    if ttl > 60*time.Second {
-        t.Errorf("expected TTL <= 60s, got %v", ttl)
-    }
+	if ttl <= 0 {
+		t.Errorf("expected positive TTL for active key, got %v", ttl)
+	}
+	if ttl > 60*time.Second {
+		t.Errorf("expected TTL <= 60s, got %v", ttl)
+	}
 }
 
 func TestTtl_DecreasesOverTime(t *testing.T) {
-    cache := NewCache(io.Discard)
-    defer cache.Stop()
+	cache := NewCache(io.Discard)
+	defer cache.Stop()
 
-    cache.Set("key", "val", 60)
-    ttl1 := cache.Ttl("key")
-    time.Sleep(500 * time.Millisecond)
-    ttl2 := cache.Ttl("key")
+	cache.Set("key", "val", 60)
+	ttl1 := cache.Ttl("key")
+	time.Sleep(500 * time.Millisecond)
+	ttl2 := cache.Ttl("key")
 
-    if ttl2 >= ttl1 {
-        t.Errorf("expected TTL to decrease over time, got ttl1=%v ttl2=%v", ttl1, ttl2)
-    }
+	if ttl2 >= ttl1 {
+		t.Errorf("expected TTL to decrease over time, got ttl1=%v ttl2=%v", ttl1, ttl2)
+	}
 }
 
 // --- isExpired ---
@@ -553,7 +553,7 @@ func TestPersist_KeySurvivesBackgroundCleanup(t *testing.T) {
 }
 
 // --- helpers ---
- 
+
 // lruOrder returns keys from MRU to LRU, excluding sentinels
 func lruOrder(c *Cache) []string {
 	var keys []string
@@ -564,7 +564,7 @@ func lruOrder(c *Cache) []string {
 	}
 	return keys
 }
- 
+
 // lruOrderReverse returns keys from LRU to MRU, excluding sentinels
 func lruOrderReverse(c *Cache) []string {
 	var keys []string
@@ -575,7 +575,7 @@ func lruOrderReverse(c *Cache) []string {
 	}
 	return keys
 }
- 
+
 func strSliceEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
@@ -587,13 +587,13 @@ func strSliceEqual(a, b []string) bool {
 	}
 	return true
 }
- 
+
 // --- Sentinel initialisation ---
- 
+
 func TestLRU_SentinelsLinkedOnInit(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	if cache.cacheHead.next != cache.cacheTail {
 		t.Error("expected head.next == tail on init")
 	}
@@ -601,11 +601,11 @@ func TestLRU_SentinelsLinkedOnInit(t *testing.T) {
 		t.Error("expected tail.prev == head on init")
 	}
 }
- 
+
 func TestLRU_SentinelsHaveNilOuterPointers(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	if cache.cacheHead.prev != nil {
 		t.Error("expected head.prev == nil")
 	}
@@ -613,28 +613,28 @@ func TestLRU_SentinelsHaveNilOuterPointers(t *testing.T) {
 		t.Error("expected tail.next == nil")
 	}
 }
- 
+
 // --- Set inserts at front ---
- 
+
 func TestLRU_SetInsertsAtFront(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
- 
+
 	if cache.cacheHead.next.Value != "a" {
 		t.Errorf("expected 'a' at front, got %q", cache.cacheHead.next.Value)
 	}
 }
- 
+
 func TestLRU_SetMaintainsMRUOrder(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 60)
 	cache.Set("c", "c", 60)
- 
+
 	// c was set last, so should be MRU
 	got := lruOrder(cache)
 	want := []string{"c", "b", "a"}
@@ -642,18 +642,18 @@ func TestLRU_SetMaintainsMRUOrder(t *testing.T) {
 		t.Errorf("expected MRU order %v, got %v", want, got)
 	}
 }
- 
+
 func TestLRU_SetLinkIsConsistentForwardAndBackward(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 60)
 	cache.Set("c", "c", 60)
- 
+
 	fwd := lruOrder(cache)
 	rev := lruOrderReverse(cache)
- 
+
 	// reverse of forward should equal reverse traversal
 	for i, j := 0, len(rev)-1; i < j; i, j = i+1, j-1 {
 		rev[i], rev[j] = rev[j], rev[i]
@@ -662,57 +662,57 @@ func TestLRU_SetLinkIsConsistentForwardAndBackward(t *testing.T) {
 		t.Errorf("forward and backward traversal disagree: fwd=%v rev=%v", fwd, rev)
 	}
 }
- 
+
 // --- Get promotes to front ---
- 
+
 func TestLRU_GetPromotesToFront(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 60)
 	cache.Set("c", "c", 60)
 	// order: c, b, a
- 
+
 	cache.Get("a") // a should move to front
 	// expected: a, c, b
- 
+
 	got := lruOrder(cache)
 	want := []string{"a", "c", "b"}
 	if !strSliceEqual(got, want) {
 		t.Errorf("expected order %v after Get('a'), got %v", want, got)
 	}
 }
- 
+
 func TestLRU_GetMRUEntryKeepsItAtFront(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 60)
 	// order: b, a
- 
+
 	cache.Get("b") // already MRU, should stay at front
- 
+
 	got := lruOrder(cache)
 	want := []string{"b", "a"}
 	if !strSliceEqual(got, want) {
 		t.Errorf("expected order %v, got %v", want, got)
 	}
 }
- 
+
 func TestLRU_GetLRUEntryMovesItToFront(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 60)
 	cache.Set("c", "c", 60)
 	// order: c, b, a — 'a' is LRU
- 
+
 	cache.Get("a")
 	// expected: a, c, b
- 
+
 	if cache.cacheHead.next.Value != "a" {
 		t.Errorf("expected 'a' at front after Get, got %q", cache.cacheHead.next.Value)
 	}
@@ -720,17 +720,17 @@ func TestLRU_GetLRUEntryMovesItToFront(t *testing.T) {
 		t.Errorf("expected 'b' as LRU after Get, got %q", cache.cacheTail.prev.Value)
 	}
 }
- 
+
 func TestLRU_GetMaintainsConsistentLinksAfterPromotion(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 60)
 	cache.Set("c", "c", 60)
- 
+
 	cache.Get("a")
- 
+
 	fwd := lruOrder(cache)
 	rev := lruOrderReverse(cache)
 	for i, j := 0, len(rev)-1; i < j; i, j = i+1, j-1 {
@@ -740,64 +740,64 @@ func TestLRU_GetMaintainsConsistentLinksAfterPromotion(t *testing.T) {
 		t.Errorf("links inconsistent after Get: fwd=%v rev=%v", fwd, rev)
 	}
 }
- 
+
 // --- Delete removes from list ---
- 
+
 func TestLRU_DeleteRemovesFromList(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 60)
 	cache.Set("c", "c", 60)
 	// order: c, b, a
- 
+
 	cache.Delete("b")
- 
+
 	got := lruOrder(cache)
 	want := []string{"c", "a"}
 	if !strSliceEqual(got, want) {
 		t.Errorf("expected order %v after Delete('b'), got %v", want, got)
 	}
 }
- 
+
 func TestLRU_DeleteMRUUpdatesHead(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 60)
 	// order: b (MRU), a
- 
+
 	cache.Delete("b")
- 
+
 	if cache.cacheHead.next.Value != "a" {
 		t.Errorf("expected 'a' as new MRU after deleting 'b', got %q", cache.cacheHead.next.Value)
 	}
 }
- 
+
 func TestLRU_DeleteLRUUpdatesTail(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 60)
 	// order: b, a (LRU)
- 
+
 	cache.Delete("a")
- 
+
 	if cache.cacheTail.prev.Value != "b" {
 		t.Errorf("expected 'b' as new LRU after deleting 'a', got %q", cache.cacheTail.prev.Value)
 	}
 }
- 
+
 func TestLRU_DeleteOnlyEntryLeavesSentinelsLinked(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Delete("a")
- 
+
 	if cache.cacheHead.next != cache.cacheTail {
 		t.Error("expected head.next == tail after deleting only entry")
 	}
@@ -805,17 +805,17 @@ func TestLRU_DeleteOnlyEntryLeavesSentinelsLinked(t *testing.T) {
 		t.Error("expected tail.prev == head after deleting only entry")
 	}
 }
- 
+
 func TestLRU_DeleteMaintainsConsistentLinks(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 60)
 	cache.Set("c", "c", 60)
- 
+
 	cache.Delete("b")
- 
+
 	fwd := lruOrder(cache)
 	rev := lruOrderReverse(cache)
 	for i, j := 0, len(rev)-1; i < j; i, j = i+1, j-1 {
@@ -825,39 +825,39 @@ func TestLRU_DeleteMaintainsConsistentLinks(t *testing.T) {
 		t.Errorf("links inconsistent after Delete: fwd=%v rev=%v", fwd, rev)
 	}
 }
- 
+
 // --- Expiry removes from list ---
- 
+
 func TestLRU_ExpiredGetRemovesFromList(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 1) // expires in 1s
 	cache.Set("c", "c", 60)
 	// order: c, b, a
- 
+
 	time.Sleep(1100 * time.Millisecond)
 	cache.Get("b") // triggers removal
- 
+
 	got := lruOrder(cache)
 	want := []string{"c", "a"}
 	if !strSliceEqual(got, want) {
 		t.Errorf("expected order %v after expired Get('b'), got %v", want, got)
 	}
 }
- 
+
 func TestLRU_ExpiredGetMaintainsConsistentLinks(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 1)
 	cache.Set("c", "c", 60)
- 
+
 	time.Sleep(1100 * time.Millisecond)
 	cache.Get("b")
- 
+
 	fwd := lruOrder(cache)
 	rev := lruOrderReverse(cache)
 	for i, j := 0, len(rev)-1; i < j; i, j = i+1, j-1 {
@@ -867,17 +867,17 @@ func TestLRU_ExpiredGetMaintainsConsistentLinks(t *testing.T) {
 		t.Errorf("links inconsistent after expired Get: fwd=%v rev=%v", fwd, rev)
 	}
 }
- 
+
 // --- Clear resets list ---
- 
+
 func TestLRU_ClearResetsSentinels(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 60)
 	cache.Clear()
- 
+
 	if cache.cacheHead.next != cache.cacheTail {
 		t.Error("expected head.next == tail after Clear")
 	}
@@ -885,33 +885,32 @@ func TestLRU_ClearResetsSentinels(t *testing.T) {
 		t.Error("expected tail.prev == head after Clear")
 	}
 }
- 
+
 func TestLRU_ClearListIsEmpty(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Set("b", "b", 60)
 	cache.Clear()
- 
+
 	got := lruOrder(cache)
 	if len(got) != 0 {
 		t.Errorf("expected empty list after Clear, got %v", got)
 	}
 }
- 
+
 func TestLRU_SetAfterClearInsertsCorrectly(t *testing.T) {
 	cache := NewCache(io.Discard)
 	defer cache.Stop()
- 
+
 	cache.Set("a", "a", 60)
 	cache.Clear()
 	cache.Set("b", "b", 60)
- 
+
 	got := lruOrder(cache)
 	want := []string{"b"}
 	if !strSliceEqual(got, want) {
 		t.Errorf("expected %v after Clear+Set, got %v", want, got)
 	}
 }
- 

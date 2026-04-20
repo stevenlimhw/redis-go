@@ -1,3 +1,5 @@
+version: "2"
+
 linters-settings:
   errcheck:
     check-type-assertions: true
@@ -34,12 +36,15 @@ linters:
     - gocritic
     - prealloc
 
-    # style, formatting
-    - stylecheck
+    # style
     - goconst
-    - gofmt
     - tagliatelle
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - goconst
 
 run:
   issues-exit-code: 1
-

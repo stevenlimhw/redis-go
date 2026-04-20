@@ -9,26 +9,22 @@ import (
 )
 
 type Cache struct {
-	CacheMap map[string]*CacheEntry
-	cacheHead *CacheEntry // most recently used (sentinel)
-	cacheTail *CacheEntry // least recently used (sentinel)
-
-	mutex sync.RWMutex
-	done chan struct{}
-	once sync.Once
-	stats Stats
-
-	logger *log.Logger
+	CacheMap  map[string]*CacheEntry
+	cacheHead *CacheEntry
+	cacheTail *CacheEntry
+	done      chan struct{}
+	logger    *log.Logger
+	stats     Stats
+	mutex     sync.RWMutex
+	once      sync.Once
 }
 
 type CacheEntry struct {
-	Value string
 	ExpiryTime time.Time
-	Ttl time.Duration
-
-	// track lru eviction
-	prev *CacheEntry
-	next *CacheEntry
+	prev       *CacheEntry
+	next       *CacheEntry
+	Value      string
+	Ttl        time.Duration
 }
 
 const defaultCacheTtl = 60 * time.Second // in secs
@@ -43,9 +39,9 @@ func NewCache(w io.Writer) *Cache {
 	tail.prev = head
 
 	cache := &Cache{
-		CacheMap:	cacheMap, 
-		done: 		done,
-		logger: 	log.New(w, "[cache] ", 0),
+		CacheMap:  cacheMap,
+		done:      done,
+		logger:    log.New(w, "[cache] ", 0),
 		cacheHead: head,
 		cacheTail: tail,
 	}
@@ -74,10 +70,10 @@ func (c *Cache) Get(key string) (string, bool) {
 	}
 
 	c.logger.Printf("GET key=%q val=%q ttl=%v expires=%s\n",
-    key,
-    entry.Value,
-    entry.Ttl,
-    entry.ExpiryTime.Format(time.DateTime),
+		key,
+		entry.Value,
+		entry.Ttl,
+		entry.ExpiryTime.Format(time.DateTime),
 	)
 
 	// move entry to most recently used (front of list)
@@ -105,16 +101,16 @@ func (c *Cache) Set(key string, val string, ttlInSeconds int) (*CacheEntry, bool
 	c.updateEntryToMru(entry)
 
 	c.logger.Printf("SET key=%q val=%q ttl=%v expires=%s\n",
-    key,
-    val,
-    ttl,
-    expiryTime.Format(time.DateTime),
+		key,
+		val,
+		ttl,
+		expiryTime.Format(time.DateTime),
 	)
 	return entry, true
 }
 
 func (c *Cache) Stop() {
-	c.once.Do(func () {
+	c.once.Do(func() {
 		close(c.done)
 	})
 }
@@ -156,7 +152,7 @@ func (c *Cache) Ttl(key string) time.Duration {
 	c.mutex.RUnlock()
 
 	if !ok {
-		c.logger.Printf("TTL key=%q not found\n", key) 
+		c.logger.Printf("TTL key=%q not found\n", key)
 		return -1
 	}
 
@@ -205,19 +201,19 @@ func (c *Cache) Persist(key string) bool {
 func (c *Cache) cleanup() {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-ticker.C:
 			// sweep expired entries
-		  c.mutex.Lock()
+			c.mutex.Lock()
 			for key, entry := range c.CacheMap {
 				if entry.isExpired() {
 					c.deleteFromCache(key)
 					c.logger.Printf("EVICT key=%q val=%q\n", key, entry.Value)
 				}
 			}
-		  c.mutex.Unlock()
+			c.mutex.Unlock()
 		case <-c.done:
 			return // exits goroutine
 		}
@@ -279,4 +275,3 @@ func (entry *CacheEntry) isExpired() bool {
 	}
 	return time.Now().After(entry.ExpiryTime)
 }
-

@@ -1,15 +1,12 @@
-run: build
-	@./bin/redis-go
+
+fmt:
+	gofmt -s -w .
+
+lint:
+	golangci-lint run
 
 build: fmt
 	@go build -o bin/redis-go
 
-fmt:
-	@fieldalignment -fix ./...
-	@go fmt ./...
-
-test: lint
-	@go test -v ./...
-
-lint:
-	@golangci-lint run
+test:
+	go test -v -race
